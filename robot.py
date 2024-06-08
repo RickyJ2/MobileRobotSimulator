@@ -1,16 +1,15 @@
 from time import sleep
 import pygame
 import math
-from display import GREEN
+from lidar import Lidar
 
 #constant
-p2m = 1
 MANUAL_MODE = 1
 LYAPUNOV_MODE = 2
 max = 0.05
 
 class Robot:
-    def __init__(self, startPos, width):
+    def __init__(self, startPos, width, lidar: Lidar):
         self.x = startPos[0]
         self.y = startPos[1]
         self.width = width
@@ -22,10 +21,23 @@ class Robot:
         self.rect = self.rotated.get_rect(center=(self.x, self.y))
         self.mode = MANUAL_MODE
         self.targetPos = startPos
+        self.lidar = lidar
+        self.radius = 15
 
-    def draw(self, map):
+    def getLidarReadings(self):
+        return self.lidar.getLidarReadings(self.x, self.y, self.theta)
+
+    def draw(self, map: pygame.Surface):
         map.blit(self.rotated, self.rect)
-        
+        for reading in self.getLidarReadings():
+            degRad = math.radians(reading[0]) + self.theta
+            x1 = self.x + self.radius * math.cos(degRad)
+            y1 = self.y + self.radius * math.sin(degRad)
+            x2 = self.x + reading[1] * math.cos(degRad)
+            y2 = self.y + reading[1] * math.sin(degRad)
+            color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
+            pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
+
     def move(self, dt, event = None):
         if event is not None:
             if event.type == pygame.MOUSEBUTTONUP:
@@ -53,7 +65,7 @@ class Robot:
         self.x += v * math.cos(self.theta)
         self.y += v * math.sin(self.theta)
         self.theta += omega
-        print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", omega, "dx: ", abs(self.x - self.targetPos[0]), "dy: ", abs(self.y - self.targetPos[1]), "dTheta: ", abs(self.theta - 0))
+        # print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", omega, "dx: ", abs(self.x - self.targetPos[0]), "dy: ", abs(self.y - self.targetPos[1]), "dTheta: ", abs(self.theta - 0))
         self.rotated = pygame.transform.rotozoom(self.body, 360 - math.degrees(self.theta),1)
         self.rect = self.rotated.get_rect(center=(self.x, self.y))
         # if self.mode == LYAPUNOV_MODE:
@@ -62,7 +74,7 @@ class Robot:
         errorX = targetPoint[0] - self.x
         errorY = targetPoint[1] - self.y
         errorTheta = targetPoint[2] - (self.theta)
-        if abs(errorX) < 5 and abs(errorY) < 5 and abs(errorTheta) < math.radians(5):
+        if abs(errorX) < 5 and abs(errorY) < 5 and abs(errorTheta) < math.radians(180):
             return 0, 0
         k1 = 1
         k2 = 8
