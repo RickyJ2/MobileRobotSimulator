@@ -10,19 +10,22 @@ from plotter import Plotter
 XDIM = 30
 YDIM = 50
 POSROBOT_X = 80
-POSROBOT_Y = 250
+POSROBOT_Y = 200
 SCALE = 10
 LIDAR_MAX_RANGE = 100
 LIDAR_ANGLE = 5
 PLOT_DPI = 100
 PLOT_XDIM = 4
 PLOT_YDIM = YDIM*SCALE/PLOT_DPI
+#Set True if only want to see robot movement
+disabledPlotter = True
 
 class Simulation:
     def __init__(self):
         self.display = display([XDIM, YDIM],'Mobile Robot Simulator',SCALE, Plotter(PLOT_XDIM, PLOT_YDIM, PLOT_DPI))
         object = readJsonFile("Object.json")
         self.obs = convertJsonToObs(object, SCALE)
+        self.obs = []
         self.robot = Robot([POSROBOT_X, POSROBOT_Y], 1.5, Lidar(LIDAR_MAX_RANGE, LIDAR_ANGLE, self.obs))
         self.running = False
 
@@ -41,9 +44,10 @@ class Simulation:
 
     def displayScreen(self):
         self.clearDisplay()
-        self.display.clearPlotter()
-        self.display.updatePlot(self.robot.lidarReadings)
-        self.display.drawPlot()
+        if not disabledPlotter:
+            self.display.clearPlotter()
+            self.display.updatePlot(self.robot.lidarReadings)
+            self.display.drawPlot()
         self.robot.draw(self.display.map)
         self.drawObs()
         self.updateDisplay()

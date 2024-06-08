@@ -24,5 +24,7 @@ class Lidar:
                         dist = self.getDistPoint(x, y, point[0], point[1])
                         if dist < minDist:
                             minDist = dist
+            if minDist == self.sensor_range:
+                minDist = 0
             readings.append([deg, minDist])
         return readings
