@@ -23,13 +23,17 @@ class Robot:
         self.targetPos = startPos
         self.lidar = lidar
         self.radius = 15
+        self.getLidarReadings()
 
     def getLidarReadings(self):
-        return self.lidar.getLidarReadings(self.x, self.y, self.theta)
+        self.lidarReadings = self.lidar.getLidarReadings(self.x, self.y, self.theta)
+
+    def updateState(self):
+        self.getLidarReadings()
 
     def draw(self, map: pygame.Surface):
         map.blit(self.rotated, self.rect)
-        for reading in self.getLidarReadings():
+        for reading in self.lidarReadings:
             degRad = math.radians(reading[0]) + self.theta
             x1 = self.x + self.radius * math.cos(degRad)
             y1 = self.y + self.radius * math.sin(degRad)

@@ -11,13 +11,15 @@ YDIM = 50
 POSROBOT_X = 100
 POSROBOT_Y = 20
 SCALE = 10
+LIDAR_MAX_RANGE = 100
+LIDAR_ANGLE = 5
 
 class Simulation:
     def __init__(self):
         self.display = display([XDIM, YDIM],'Mobile Robot Simulator' ,SCALE)
         object = readJsonFile("Object.json")
-        self.obs = convertJsonToObs(object)
-        self.robot = Robot([POSROBOT_X, POSROBOT_Y], 1.5, Lidar(100, 8, self.obs))
+        self.obs = convertJsonToObs(object, SCALE)
+        self.robot = Robot([POSROBOT_X, POSROBOT_Y], 1.5, Lidar(LIDAR_MAX_RANGE, LIDAR_ANGLE, self.obs))
         self.running = False
         self.dt = 0
         self.lastTime = pygame.time.get_ticks() 
@@ -26,6 +28,7 @@ class Simulation:
         self.displayScreen()
         self.running = True
         while self.running:
+            self.robot.updateState()
             self.displayScreen()
             self.dt = (pygame.time.get_ticks() - self.lastTime)/1000
             self.lastTime = pygame.time.get_ticks()

@@ -1,15 +1,15 @@
 import pygame
-SCALE = 10
 
 class Obstacle:
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, scale):
         self.x = x
         self.y = y
         self.width  = width
         self.height = height
+        self.scale = scale
     
     def isIntersect(self, x, y, x1, y2):
-        rect = pygame.Rect(self.x*SCALE, self.y*SCALE, self.width*SCALE, self.height*SCALE)
+        rect = pygame.Rect(self.x*self.scale, self.y*self.scale, self.width*self.scale, self.height*self.scale)
         clippedLine = rect.clipline(x, y, x1, y2)
         if clippedLine is None:
             return False
