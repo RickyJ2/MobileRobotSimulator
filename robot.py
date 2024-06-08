@@ -1,4 +1,3 @@
-from time import sleep
 import pygame
 import math
 from lidar import Lidar
@@ -72,8 +71,7 @@ class Robot:
         # print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", omega, "dx: ", abs(self.x - self.targetPos[0]), "dy: ", abs(self.y - self.targetPos[1]), "dTheta: ", abs(self.theta - 0))
         self.rotated = pygame.transform.rotozoom(self.body, 360 - math.degrees(self.theta),1)
         self.rect = self.rotated.get_rect(center=(self.x, self.y))
-        # if self.mode == LYAPUNOV_MODE:
-        #     sleep(0.01)
+
     def LyapunovControl(self, targetPoint):
         errorX = targetPoint[0] - self.x
         errorY = targetPoint[1] - self.y
