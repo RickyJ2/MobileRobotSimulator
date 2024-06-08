@@ -5,7 +5,7 @@ from lidar import Lidar
 #constant
 MANUAL_MODE = 1
 LYAPUNOV_MODE = 2
-max = 0.05
+max = 0.2
 
 class Robot:
     def __init__(self, startPos, width, lidar: Lidar):
@@ -41,7 +41,7 @@ class Robot:
             color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
             pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
 
-    def move(self, dt, event = None):
+    def move(self, event = None):
         if event is not None:
             if event.type == pygame.MOUSEBUTTONUP:
                 self.targetPos = pygame.mouse.get_pos()

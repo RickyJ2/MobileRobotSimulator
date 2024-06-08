@@ -4,43 +4,46 @@ from utils.convertJsonToObs import convertJsonToObs
 from utils.readJsonFile import readJsonFile
 import pygame
 from lidar import Lidar
+from plotter import Plotter
 
 #configuration
 XDIM = 30
 YDIM = 50
-POSROBOT_X = 100
-POSROBOT_Y = 20
+POSROBOT_X = 80
+POSROBOT_Y = 250
 SCALE = 10
 LIDAR_MAX_RANGE = 100
 LIDAR_ANGLE = 5
+PLOT_DPI = 100
+PLOT_XDIM = 4
+PLOT_YDIM = YDIM*SCALE/PLOT_DPI
 
 class Simulation:
     def __init__(self):
-        self.display = display([XDIM, YDIM],'Mobile Robot Simulator' ,SCALE)
+        self.display = display([XDIM, YDIM],'Mobile Robot Simulator',SCALE, Plotter(PLOT_XDIM, PLOT_YDIM, PLOT_DPI))
         object = readJsonFile("Object.json")
         self.obs = convertJsonToObs(object, SCALE)
         self.robot = Robot([POSROBOT_X, POSROBOT_Y], 1.5, Lidar(LIDAR_MAX_RANGE, LIDAR_ANGLE, self.obs))
         self.running = False
-        self.dt = 0
-        self.lastTime = pygame.time.get_ticks() 
-    
+
     def run(self):
         self.displayScreen()
         self.running = True
         while self.running:
             self.robot.updateState()
             self.displayScreen()
-            self.dt = (pygame.time.get_ticks() - self.lastTime)/1000
-            self.lastTime = pygame.time.get_ticks()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-                self.robot.move(self.dt, event)
-            self.robot.move(self.dt)
+                self.robot.move(event)
+            self.robot.move()
         pygame.quit()
 
     def displayScreen(self):
         self.clearDisplay()
+        self.display.clearPlotter()
+        self.display.updatePlot(self.robot.lidarReadings)
+        self.display.drawPlot()
         self.robot.draw(self.display.map)
         self.drawObs()
         self.updateDisplay()
