@@ -9,7 +9,7 @@ from plotter import Plotter
 #configuration
 XDIM = 30
 YDIM = 50
-POSROBOT_X = 80
+POSROBOT_X = 200
 POSROBOT_Y = 200
 SCALE = 10
 LIDAR_MAX_RANGE = 100
@@ -25,7 +25,6 @@ class Simulation:
         self.display = display([XDIM, YDIM],'Mobile Robot Simulator',SCALE, Plotter(PLOT_XDIM, PLOT_YDIM, PLOT_DPI))
         object = readJsonFile("Object.json")
         self.obs = convertJsonToObs(object, SCALE)
-        self.obs = []
         self.robot = Robot([POSROBOT_X, POSROBOT_Y], 1.5, Lidar(LIDAR_MAX_RANGE, LIDAR_ANGLE, self.obs))
         self.running = False
 

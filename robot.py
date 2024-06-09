@@ -1,3 +1,5 @@
+from time import sleep
+import numpy as np
 import pygame
 import math
 from lidar import Lidar
@@ -6,6 +8,7 @@ from lidar import Lidar
 MANUAL_MODE = 1
 LYAPUNOV_MODE = 2
 max = 0.04
+dt = 100 #ms
 
 class Robot:
     def __init__(self, startPos, width, lidar: Lidar):
@@ -23,6 +26,7 @@ class Robot:
         self.lidar = lidar
         self.radius = 15
         self.getLidarReadings()
+        self.previousTime = pygame.time.get_ticks()
 
     def getLidarReadings(self):
         self.lidarReadings = self.lidar.getLidarReadings(self.x, self.y, self.theta)
@@ -48,6 +52,7 @@ class Robot:
             if event.type == pygame.MOUSEBUTTONUP:
                 self.targetPos = pygame.mouse.get_pos()
                 self.mode = LYAPUNOV_MODE
+                self.previousTime = pygame.time.get_ticks()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
                     self.vLeft += 0.001
@@ -58,10 +63,9 @@ class Robot:
                 elif event.key == pygame.K_d:
                     self.vRight -= 0.001
                 self.mode = MANUAL_MODE
-        #x,y start 0,0 from top left
-        if self.mode == LYAPUNOV_MODE:
+        if self.mode == LYAPUNOV_MODE and pygame.time.get_ticks() - self.previousTime > dt:
+            self.previousTime = pygame.time.get_ticks()
             vT, omegaT = self.LyapunovControl([self.targetPos[0], self.targetPos[1], math.radians(0)])
-            # vT, omegaT = self.obsAvoidance(vL, omegaL, 50)
             self.vLeft = vT - omegaT*self.width/2
             self.vRight = vT + omegaT*self.width/2
         self.vLeft, self.vRight = self.saturatedSpeed(self.vLeft, self.vRight, max)
@@ -86,29 +90,12 @@ class Robot:
             timesRight = -1
             vRight = -vRight
         if vLeft > vRight:
-            vRight = maxSpeed * (vRight/vLeft)
+            vRight *= maxSpeed/vLeft
             vLeft = maxSpeed
         else:
-            vLeft = maxSpeed * (vLeft/vRight)
+            vLeft *= maxSpeed/vRight
             vRight = maxSpeed
         return vLeft * timesLeft, vRight * timesRight
-
-    def obsAvoidance(self, v, omega, threshold = 10):
-        obss = filter(lambda x: x[1] != 0, self.lidarReadings)
-        obss = list(obss)
-        if len(obss) == 0:
-            return v, omega
-        Fx = 0
-        Fy = 0
-        for obs in obss:
-            if obs[1] < threshold:
-                F = threshold/obs[1]
-                Fx += F * math.cos(math.radians(180-obs[0]))
-                Fy += F * math.sin(math.radians(180-obs[0]))
-        SumOmega = math.atan2(Fy, Fx)
-        print("SumOmega: ", math.degrees(SumOmega))
-        omega += SumOmega
-        return v, omega
 
     def LyapunovControl(self, targetPoint):
         errorX = targetPoint[0] - self.x
@@ -116,7 +103,7 @@ class Robot:
         errorTheta = targetPoint[2] - (self.theta)
         if abs(errorX) < 5 and abs(errorY) < 5 and abs(errorTheta) < math.radians(180):
             return 0, 0
-        k1 = 1
+        k1 = 2.5
         k2 = 1
         k3 = 1
         v = k1 * (errorX * math.cos(self.theta) + errorY * math.sin(self.theta))

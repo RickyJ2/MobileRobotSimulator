@@ -19,6 +19,7 @@ class display:
         self.dimensions = dimensions
         mapWidth = dimensions[0]*scale + plotter.width*plotter.dpi
         mapHeight = dimensions[1]*scale
+        pygame.init()
         self.map = pygame.display.set_mode((mapWidth, mapHeight))
         pygame.display.set_caption(caption)
         self.clear()
