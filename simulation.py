@@ -48,7 +48,7 @@ class Simulation:
             self.display.updatePlot(self.robot.lidarReadings)
             self.display.drawPlot()
         self.robot.draw(self.display.map)
-        self.drawObs()
+        # self.drawObs()
         self.updateDisplay()
 
     def drawObs(self):
