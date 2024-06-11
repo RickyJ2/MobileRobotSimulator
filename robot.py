@@ -36,6 +36,7 @@ class Robot:
 
     def draw(self, map: pygame.Surface):
         map.blit(self.rotated, self.rect)
+        corners = self.findCorner()
         for reading in self.lidarReadings:
             if reading[1] == 0:
                 continue
@@ -46,6 +47,24 @@ class Robot:
             y2 = self.y + reading[1] * math.sin(degRad)
             color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
             pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
+        for corner in corners:
+            degRad = math.radians(self.lidarReadings[corner][0]) + self.theta
+            x = self.x + self.lidarReadings[corner][1] * math.cos(degRad)
+            y = self.y + self.lidarReadings[corner][1] * math.sin(degRad)
+            pygame.draw.circle(map, (0, 0, 255), (int(x), int(y)), 5)
+
+    def findCorner(self, threshold = 2):
+        corners = []
+        prevGradient = self.lidarReadings[1][1] - self.lidarReadings[0][1]
+        for i in range(2, len(self.lidarReadings)):
+            gradient = self.lidarReadings[i][1] - self.lidarReadings[i - 1][1]
+            if abs(gradient - prevGradient) > threshold and getSign(prevGradient) != getSign(gradient):
+                if self.lidarReadings[i][1] != 0:
+                    corners.append(i - 1)
+                else:
+                    corners.append(i - 2)
+            prevGradient = gradient
+        return corners
 
     def move(self, event = None):
         if event is not None:
@@ -74,7 +93,7 @@ class Robot:
         self.x += v * math.cos(self.theta)
         self.y += v * math.sin(self.theta)
         self.theta += omega
-        print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", math.degrees(omega))
+        # print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", math.degrees(omega))
         self.rotated = pygame.transform.rotozoom(self.body, 360 - math.degrees(self.theta),1)
         self.rect = self.rotated.get_rect(center=(self.x, self.y))
     
@@ -110,3 +129,6 @@ class Robot:
         omega = k2 * (-errorX * math.sin(self.theta) + errorY * math.cos(self.theta)) + k3 * (errorTheta)
         
         return v, omega
+
+def getSign(num):
+    return 1 if num >= 0 else -1

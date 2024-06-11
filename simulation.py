@@ -9,16 +9,16 @@ from plotter import Plotter
 #configuration
 XDIM = 30
 YDIM = 50
-POSROBOT_X = 200
+POSROBOT_X = 100
 POSROBOT_Y = 200
 SCALE = 10
-LIDAR_MAX_RANGE = 100
+LIDAR_MAX_RANGE = 200
 LIDAR_ANGLE = 5
 PLOT_DPI = 100
 PLOT_XDIM = 4
 PLOT_YDIM = YDIM*SCALE/PLOT_DPI
 #Set True if only want to see robot movement
-disabledPlotter = True
+disabledPlotter = False
 
 class Simulation:
     def __init__(self):
