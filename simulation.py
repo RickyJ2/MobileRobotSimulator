@@ -9,10 +9,10 @@ from plotter import Plotter
 #configuration
 XDIM = 30
 YDIM = 50
-POSROBOT_X = 100
-POSROBOT_Y = 200
+POSROBOT_X = 80
+POSROBOT_Y = 180
 SCALE = 10
-LIDAR_MAX_RANGE = 200
+LIDAR_MAX_RANGE = 250
 LIDAR_ANGLE = 5
 PLOT_DPI = 100
 PLOT_XDIM = 4
@@ -46,9 +46,10 @@ class Simulation:
         if not disabledPlotter:
             self.display.clearPlotter()
             self.display.updatePlot(self.robot.lidarReadings)
+            self.display.updatePlot(self.robot.diff)
             self.display.drawPlot()
+        self.drawObs()
         self.robot.draw(self.display.map)
-        # self.drawObs()
         self.updateDisplay()
 
     def drawObs(self):

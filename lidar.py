@@ -1,4 +1,5 @@
 import math
+import random
 from obstacle import Obstacle
 
 class Lidar:
@@ -24,7 +25,11 @@ class Lidar:
                         dist = self.getDistPoint(x, y, point[0], point[1])
                         if dist < minDist:
                             minDist = dist
-            if minDist == self.sensor_range:
-                minDist = 0
+            minDist = self.addRandomError(minDist)
+            # if minDist == self.sensor_range:
+            #     minDist = 0
             readings.append([deg, minDist])
         return readings
+    
+    def addRandomError(self, val):
+        return val + random.random()

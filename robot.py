@@ -30,6 +30,10 @@ class Robot:
 
     def getLidarReadings(self):
         self.lidarReadings = self.lidar.getLidarReadings(self.x, self.y, self.theta)
+        self.diff = []
+        self.diff.append([self.lidarReadings[0][0], self.lidarReadings[0][1] - self.lidarReadings[-1][1]])
+        for i in range(1, len(self.lidarReadings)):
+            self.diff.append([self.lidarReadings[i][0], self.lidarReadings[i][1] - self.lidarReadings[i - 1][1]])
 
     def updateState(self):
         self.getLidarReadings()
@@ -37,8 +41,9 @@ class Robot:
     def draw(self, map: pygame.Surface):
         map.blit(self.rotated, self.rect)
         corners, obss = self.findObs()
+        print(corners)
         for reading in self.lidarReadings:
-            if reading[1] == 0:
+            if reading[1] > 200:
                 continue
             degRad = math.radians(reading[0]) + self.theta
             x1 = self.x + self.radius * math.cos(degRad)
@@ -61,37 +66,32 @@ class Robot:
             y2 = self.y + self.lidarReadings[obs[1]][1] * math.sin(degRad)
             pygame.draw.line(map, (0,255,0), (x1, y1), (x2, y2), 1)
 
-    def findCorner(self, threshold = 2):
-        corners = []
-        prevGradient = self.lidarReadings[1][1] - self.lidarReadings[0][1]
-        for i in range(2, len(self.lidarReadings)):
-            gradient = self.lidarReadings[i][1] - self.lidarReadings[i - 1][1]
-            if abs(gradient - prevGradient) > threshold and getSign(prevGradient) != getSign(gradient):
-                if self.lidarReadings[i][1] != 0:
-                    corners.append(i - 1)
-                else:
-                    corners.append(i - 2)
-            prevGradient = gradient
-        return corners
-
-    def findObs(self, threshold = 0):
+    def findObs(self):
+        sumDiff = 0
+        for diff in self.diff:
+            sumDiff += abs(diff[1])
+        threshold = sumDiff/len(self.diff)
         corners = []
         obss = []
-        prevGradient = self.lidarReadings[1][1] - self.lidarReadings[0][1]
-        for i in range(2, len(self.lidarReadings)):
-            gradient = self.lidarReadings[i][1] - self.lidarReadings[i - 1][1]
-            if abs(gradient - prevGradient) > threshold and getSign(prevGradient) != getSign(gradient):
-                if self.lidarReadings[i][1] != 0:
+        for i in range(1, len(self.diff)):
+            if abs(self.diff[i][1]) > threshold:
+                if self.diff[i][1] > 0:
                     corners.append(i - 1)
                 else:
-                    corners.append(i - 2)
+                    corners.append(i)
+            #obstacle
             if len(corners) > 1:
                 prevCorner = corners[-2]
                 diffLen = corners[-1] - prevCorner
                 index = round(prevCorner + diffLen/2) % len(self.lidarReadings)
-                if self.lidarReadings[index][1] != 0:
+                if self.lidarReadings[index][1] < 200:
                     obss.append([corners[-2], corners[-1]])
-            prevGradient = gradient
+        prevCorner = corners[-1]
+        diffLen = len(self.lidarReadings) + corners[0] - prevCorner
+        index = round(prevCorner + diffLen/2) % len(self.lidarReadings)
+        if self.lidarReadings[index][1] < 200:
+            obss.append([corners[-1], corners[0]])
+        # print(corners)
         return corners, obss
 
     def move(self, event = None):
@@ -159,4 +159,4 @@ class Robot:
         return v, omega
 
 def getSign(num):
-    return 1 if num >= 0 else -1
+    return 1 if num > 0 else -1 if num < 0 else 0
