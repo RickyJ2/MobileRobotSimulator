@@ -18,7 +18,7 @@ PLOT_DPI = 100
 PLOT_XDIM = 4
 PLOT_YDIM = YDIM*SCALE/PLOT_DPI
 #Set True if only want to see robot movement
-disabledPlotter = False
+disabledPlotter = True
 
 class Simulation:
     def __init__(self):

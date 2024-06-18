@@ -34,14 +34,13 @@ class Robot:
         self.diff.append([self.lidarReadings[0][0], self.lidarReadings[0][1] - self.lidarReadings[-1][1]])
         for i in range(1, len(self.lidarReadings)):
             self.diff.append([self.lidarReadings[i][0], self.lidarReadings[i][1] - self.lidarReadings[i - 1][1]])
+        self.corners = self.findObs()
 
     def updateState(self):
         self.getLidarReadings()
 
     def draw(self, map: pygame.Surface):
         map.blit(self.rotated, self.rect)
-        corners, obss = self.findObs()
-        print(corners)
         for reading in self.lidarReadings:
             if reading[1] > 200:
                 continue
@@ -52,19 +51,11 @@ class Robot:
             y2 = self.y + reading[1] * math.sin(degRad)
             color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
             pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
-        for corner in corners:
+        for corner in self.corners:
             degRad = math.radians(self.lidarReadings[corner][0]) + self.theta
             x = self.x + self.lidarReadings[corner][1] * math.cos(degRad)
             y = self.y + self.lidarReadings[corner][1] * math.sin(degRad)
             pygame.draw.circle(map, (0, 0, 255), (int(x), int(y)), 5)
-        for obs in obss:
-            degRad = math.radians(self.lidarReadings[obs[0]][0]) + self.theta
-            x1 = self.x + self.lidarReadings[obs[0]][1] * math.cos(degRad)
-            y1 = self.y + self.lidarReadings[obs[0]][1] * math.sin(degRad)
-            degRad = math.radians(self.lidarReadings[obs[1]][0]) + self.theta
-            x2 = self.x + self.lidarReadings[obs[1]][1] * math.cos(degRad)
-            y2 = self.y + self.lidarReadings[obs[1]][1] * math.sin(degRad)
-            pygame.draw.line(map, (0,255,0), (x1, y1), (x2, y2), 1)
 
     def findObs(self):
         sumDiff = 0
@@ -72,27 +63,13 @@ class Robot:
             sumDiff += abs(diff[1])
         threshold = sumDiff/len(self.diff)
         corners = []
-        obss = []
         for i in range(1, len(self.diff)):
             if abs(self.diff[i][1]) > threshold:
                 if self.diff[i][1] > 0:
                     corners.append(i - 1)
                 else:
                     corners.append(i)
-            #obstacle
-            if len(corners) > 1:
-                prevCorner = corners[-2]
-                diffLen = corners[-1] - prevCorner
-                index = round(prevCorner + diffLen/2) % len(self.lidarReadings)
-                if self.lidarReadings[index][1] < 200:
-                    obss.append([corners[-2], corners[-1]])
-        prevCorner = corners[-1]
-        diffLen = len(self.lidarReadings) + corners[0] - prevCorner
-        index = round(prevCorner + diffLen/2) % len(self.lidarReadings)
-        if self.lidarReadings[index][1] < 200:
-            obss.append([corners[-1], corners[0]])
-        # print(corners)
-        return corners, obss
+        return corners
 
     def move(self, event = None):
         if event is not None:
@@ -121,7 +98,7 @@ class Robot:
         self.x += v * math.cos(self.theta)
         self.y += v * math.sin(self.theta)
         self.theta += omega
-        # print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", math.degrees(omega))
+        print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", math.degrees(omega))
         self.rotated = pygame.transform.rotozoom(self.body, 360 - math.degrees(self.theta),1)
         self.rect = self.rotated.get_rect(center=(self.x, self.y))
     
@@ -136,11 +113,16 @@ class Robot:
         if vRight < 0:
             timesRight = -1
             vRight = -vRight
-        if vLeft > vRight:
-            vRight *= maxSpeed/vLeft
+        if vLeft > maxSpeed and vRight > maxSpeed:
+            if vLeft > vRight:
+                vRight *= maxSpeed/vLeft
+                vLeft = maxSpeed
+            else:
+                vLeft *= maxSpeed/vRight
+                vRight = maxSpeed
+        elif vLeft > maxSpeed:
             vLeft = maxSpeed
-        else:
-            vLeft *= maxSpeed/vRight
+        elif vRight > maxSpeed:
             vRight = maxSpeed
         return vLeft * timesLeft, vRight * timesRight
 
