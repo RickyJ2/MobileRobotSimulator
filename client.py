@@ -1,4 +1,3 @@
-from tornado import gen
 from tornado.websocket import websocket_connect, WebSocketClosedError, WebSocketClientConnection
 
 class Client(object):
@@ -8,7 +7,6 @@ class Client(object):
         self.ws: WebSocketClientConnection = None
         self.tryingConnecting : bool = False
 
-    # @gen.coroutine
     async def connect(self, onMsg = None):
         if not (onMsg is None):
             self.onMsg = onMsg
