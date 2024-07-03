@@ -34,7 +34,6 @@ class Robot:
         self.diff.append([self.lidarReadings[0][0], self.lidarReadings[0][1] - self.lidarReadings[-1][1]])
         for i in range(1, len(self.lidarReadings)):
             self.diff.append([self.lidarReadings[i][0], self.lidarReadings[i][1] - self.lidarReadings[i - 1][1]])
-        self.corners = self.findObs()
 
     def updateState(self):
         self.getLidarReadings()
@@ -51,25 +50,6 @@ class Robot:
             y2 = self.y + reading[1] * math.sin(degRad)
             color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
             pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
-        for corner in self.corners:
-            degRad = math.radians(self.lidarReadings[corner][0]) + self.theta
-            x = self.x + self.lidarReadings[corner][1] * math.cos(degRad)
-            y = self.y + self.lidarReadings[corner][1] * math.sin(degRad)
-            pygame.draw.circle(map, (0, 0, 255), (int(x), int(y)), 5)
-
-    def findObs(self):
-        sumDiff = 0
-        for diff in self.diff:
-            sumDiff += abs(diff[1])
-        threshold = sumDiff/len(self.diff)
-        corners = []
-        for i in range(1, len(self.diff)):
-            if abs(self.diff[i][1]) > threshold:
-                if self.diff[i][1] > 0:
-                    corners.append(i - 1)
-                else:
-                    corners.append(i)
-        return corners
 
     def move(self, event = None):
         if event is not None:
