@@ -9,7 +9,7 @@ max = 0.04
 dt = 100 #ms
 
 class Robot:
-    def __init__(self, startPos, width, lidar: Lidar):
+    def __init__(self,startPos, width, lidar: Lidar):
         self.x = startPos[0]
         self.y = startPos[1]
         self.width = width
@@ -37,16 +37,16 @@ class Robot:
 
     def draw(self, map: pygame.Surface):
         map.blit(self.rotated, self.rect)
-        for reading in self.lidarReadings:
-            if reading[1] > 200:
-                continue
-            degRad = math.radians(reading[0]) + self.theta
-            x1 = self.x + self.radius * math.cos(degRad)
-            y1 = self.y + self.radius * math.sin(degRad)
-            x2 = self.x + reading[1] * math.cos(degRad)
-            y2 = self.y + reading[1] * math.sin(degRad)
-            color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
-            pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
+        # for reading in self.lidarReadings:
+        #     if reading[1] > 200:
+        #         continue
+        #     degRad = math.radians(reading[0]) + self.theta
+        #     x1 = self.x + self.radius * math.cos(degRad)
+        #     y1 = self.y + self.radius * math.sin(degRad)
+        #     x2 = self.x + reading[1] * math.cos(degRad)
+        #     y2 = self.y + reading[1] * math.sin(degRad)
+        #     color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
+        #     pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
 
     def move(self, event = None):
         if event is not None:
@@ -64,7 +64,6 @@ class Robot:
         self.x += v * math.cos(self.theta)
         self.y += v * math.sin(self.theta)
         self.theta += omega
-        print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", math.degrees(omega))
         self.rotated = pygame.transform.rotozoom(self.body, 360 - math.degrees(self.theta),1)
         self.rect = self.rotated.get_rect(center=(self.x, self.y))
     
