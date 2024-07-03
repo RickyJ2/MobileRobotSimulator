@@ -5,8 +5,6 @@ import math
 from lidar import Lidar
 
 #constant
-MANUAL_MODE = 1
-LYAPUNOV_MODE = 2
 max = 0.04
 dt = 100 #ms
 
@@ -21,7 +19,6 @@ class Robot:
         self.vRight = 0
         self.rotated = self.body
         self.rect = self.rotated.get_rect(center=(self.x, self.y))
-        self.mode = MANUAL_MODE
         self.targetPos = startPos
         self.lidar = lidar
         self.radius = 15
@@ -55,19 +52,8 @@ class Robot:
         if event is not None:
             if event.type == pygame.MOUSEBUTTONUP:
                 self.targetPos = pygame.mouse.get_pos()
-                self.mode = LYAPUNOV_MODE
                 self.previousTime = pygame.time.get_ticks()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_q:
-                    self.vLeft += 0.001
-                elif event.key == pygame.K_a:
-                    self.vLeft -= 0.001
-                elif event.key == pygame.K_e:
-                    self.vRight += 0.001
-                elif event.key == pygame.K_d:
-                    self.vRight -= 0.001
-                self.mode = MANUAL_MODE
-        if self.mode == LYAPUNOV_MODE and pygame.time.get_ticks() - self.previousTime > dt:
+        if pygame.time.get_ticks() - self.previousTime > dt:
             self.previousTime = pygame.time.get_ticks()
             vT, omegaT = self.LyapunovControl([self.targetPos[0], self.targetPos[1], math.radians(0)])
             self.vLeft = vT - omegaT*self.width/2
