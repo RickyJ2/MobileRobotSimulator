@@ -1,5 +1,4 @@
 import pygame
-from plotter import Plotter
 
 #constant
 WHITE = (255, 255, 255)
@@ -13,11 +12,10 @@ NODETHICKNESS = 0
 EDGETHICKNESS = 1
 
 class display:
-    def __init__(self, dimensions, caption, scale, plotter: Plotter):
-        self.plotter: Plotter = plotter
+    def __init__(self, dimensions, caption, scale):
         self.scale = scale
         self.dimensions = dimensions
-        mapWidth = dimensions[0]*scale + plotter.width*plotter.dpi
+        mapWidth = dimensions[0]*scale
         mapHeight = dimensions[1]*scale
         pygame.init()
         self.map = pygame.display.set_mode((mapWidth, mapHeight))
@@ -26,16 +24,7 @@ class display:
     
     def clear(self):
         self.map.fill(BLACK)
-
-    def clearPlotter(self):
-        self.plotter.clear()
-
-    def updatePlot(self, data):
-        self.plotter.plot(data)
-
-    def drawPlot(self):
-        startPoint = (self.dimensions[0]*self.scale, 0)
-        self.plotter.draw(self.map, startPoint)
+        
     #draws a circle on the map
     #center[0]: x
     #center[1]: y
