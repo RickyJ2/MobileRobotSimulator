@@ -1,3 +1,4 @@
+import logging
 from tornado.websocket import websocket_connect, WebSocketClosedError, WebSocketClientConnection
 
 class Client(object):
@@ -12,17 +13,16 @@ class Client(object):
             self.onMsg = onMsg
         if(self.tryingConnecting):
             return
-        print("Trying to connect to server...")
+        logging.info("Trying to connect to server...")
         try:
             self.tryingConnecting = True
             self.ws = await websocket_connect(self.url, on_message_callback=self.onMsg)
-            print("Connected to Server 2")
         except Exception as e:
             self.tryingConnecting = False
-            print(f"connection error: {e}")
+            logging.error(f"connection error: {e}")
         else:
             self.tryingConnecting = False
-            print("Connected to Server")
+            logging.info("Connected to Server")
 
     def send(self, msg):
         if self.ws is None:
@@ -33,8 +33,8 @@ class Client(object):
             except WebSocketClosedError:
                 self.connect()
             except Exception as e:
-                print(f"Websocket Error: {e}")
-                print(f"error msg: {msg}")
+                logging.error(f"Websocket Error: {e}")
+                logging.error(f"error msg: {msg}")
 
     def closeConnection(self):
         if self.ws is None:

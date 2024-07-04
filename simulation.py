@@ -1,9 +1,10 @@
 from display import display
 from robot import Robot
+from agv import AGV
 from utils.convertJsonToObs import convertJsonToObs
 from utils.readJsonFile import readJsonFile
 import pygame
-from lidar import Lidar
+from point import Point
 
 #configuration
 XDIM = 30
@@ -19,26 +20,29 @@ class Simulation:
         self.display = display([XDIM, YDIM],'Mobile Robot Simulator',SCALE)
         object = readJsonFile("Object.json")
         self.obs = convertJsonToObs(object, SCALE)
-        self.robot = Robot([POSROBOT_X, POSROBOT_Y], 1.5, Lidar(LIDAR_MAX_RANGE, LIDAR_ANGLE, self.obs))
+        
+        self.agv:AGV = AGV(1)
+        robot1 = Robot(Point(POSROBOT_X, POSROBOT_Y), 1.5)
+        self.agv.init(robot1)
         self.running = False
 
     def run(self):
+        self.agv.connectWebsocket()
         self.displayScreen()
         self.running = True
         while self.running:
-            self.robot.updateState()
             self.displayScreen()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-                self.robot.move(event)
-            self.robot.move()
+            self.agv.robot.move()
         pygame.quit()
+        self.agv.disconnectWebsocket()
 
     def displayScreen(self):
         self.clearDisplay()
         self.drawObs()
-        self.robot.draw(self.display.map)
+        self.agv.robot.draw(self.display.map)
         self.updateDisplay()
 
     def drawObs(self):

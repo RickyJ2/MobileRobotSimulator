@@ -1,58 +1,54 @@
-from time import sleep
-import numpy as np
 import pygame
 import math
-from lidar import Lidar
+from pose import Pose
+from point import Point
 
 #constant
 max = 0.04
 dt = 100 #ms
 
 class Robot:
-    def __init__(self,startPos, width, lidar: Lidar):
-        self.x = startPos[0]
-        self.y = startPos[1]
+    def __init__(self, startPos: Point, width):
+        self.currentPose: Pose = Pose(startPos, math.degrees(0))
         self.width = width
         self.body = pygame.image.load("robot.png")
-        self.theta = math.radians(0)
         self.vLeft = 0
         self.vRight = 0
         self.rotated = self.body
-        self.rect = self.rotated.get_rect(center=(self.x, self.y))
+        self.rect = self.rotated.get_rect(center=(startPos.x, startPos.y))
         self.targetPos = startPos
-        self.lidar = lidar
-        self.radius = 15
-        self.getLidarReadings()
         self.previousTime = pygame.time.get_ticks()
-
-    def getLidarReadings(self):
-        self.lidarReadings = self.lidar.getLidarReadings(self.x, self.y, self.theta)
-        self.diff = []
-        self.diff.append([self.lidarReadings[0][0], self.lidarReadings[0][1] - self.lidarReadings[-1][1]])
-        for i in range(1, len(self.lidarReadings)):
-            self.diff.append([self.lidarReadings[i][0], self.lidarReadings[i][1] - self.lidarReadings[i - 1][1]])
-
-    def updateState(self):
-        self.getLidarReadings()
 
     def draw(self, map: pygame.Surface):
         map.blit(self.rotated, self.rect)
-        # for reading in self.lidarReadings:
-        #     if reading[1] > 200:
-        #         continue
-        #     degRad = math.radians(reading[0]) + self.theta
-        #     x1 = self.x + self.radius * math.cos(degRad)
-        #     y1 = self.y + self.radius * math.sin(degRad)
-        #     x2 = self.x + reading[1] * math.cos(degRad)
-        #     y2 = self.y + reading[1] * math.sin(degRad)
-        #     color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
-        #     pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
 
-    def move(self, event = None):
-        if event is not None:
-            if event.type == pygame.MOUSEBUTTONUP:
-                self.targetPos = pygame.mouse.get_pos()
-                self.previousTime = pygame.time.get_ticks()
+    def getPos(self) -> Pose:
+        return self.currentPose
+
+    def getVelocity(self) -> float:
+        return ((self.vLeft + self.vRight)/2)
+    
+    def stop(self):
+        self.vLeft = 0
+        self.vRight = 0
+
+    def setSpeed(self, v, omega):
+        self.vLeft = v - omega*self.width/2
+        self.vRight = v + omega*self.width/2
+        self.vLeft, self.vRight = self.saturatedSpeed(self.vLeft, self.vRight, max)
+
+    def move(self):
+        v = ((self.vLeft + self.vRight)/2)
+        omega = ((self.vRight - self.vLeft)/self.width)
+        self.currentPose.point.x += v * math.cos(self.currentPose.orientation)
+        self.currentPose.point.y += v * math.sin(self.currentPose.orientation)
+        self.currentPose.orientation += omega
+        self.rotated = pygame.transform.rotozoom(self.body, 360 - math.degrees(self.currentPose.orientation),1)
+        self.rect = self.rotated.get_rect(center=(self.currentPose.point.x, self.currentPose.point.y))
+
+    def move22(self, targetPose: Pose):
+        self.targetPos = targetPose
+        self.previousTime = pygame.time.get_ticks()
         if pygame.time.get_ticks() - self.previousTime > dt:
             self.previousTime = pygame.time.get_ticks()
             vT, omegaT = self.LyapunovControl([self.targetPos[0], self.targetPos[1], math.radians(0)])
@@ -90,20 +86,6 @@ class Robot:
         elif vRight > maxSpeed:
             vRight = maxSpeed
         return vLeft * timesLeft, vRight * timesRight
-
-    def LyapunovControl(self, targetPoint):
-        errorX = targetPoint[0] - self.x
-        errorY = targetPoint[1] - self.y
-        errorTheta = targetPoint[2] - (self.theta)
-        if abs(errorX) < 5 and abs(errorY) < 5 and abs(errorTheta) < math.radians(180):
-            return 0, 0
-        k1 = 2.5
-        k2 = 1
-        k3 = 1
-        v = k1 * (errorX * math.cos(self.theta) + errorY * math.sin(self.theta))
-        omega = k2 * (-errorX * math.sin(self.theta) + errorY * math.cos(self.theta)) + k3 * (errorTheta)
-        
-        return v, omega
 
 def getSign(num):
     return 1 if num > 0 else -1 if num < 0 else 0
