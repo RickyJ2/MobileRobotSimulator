@@ -14,6 +14,9 @@ class Point:
 def dictToPoint(d: dict) -> Point:
     return Point(d["x"], d["y"])
 
+def dictToPointCHGXY(d: dict) -> Point:
+    return Point(d["y"], d["x"])
+
 def pointToDict(p: Point) -> dict:
     return {
         "x": p.x,

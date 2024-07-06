@@ -1,7 +1,7 @@
 import json
 import logging
 import math
-from point import Point, dictToPoint
+from point import Point, dictToPointCHGXY
 from pose import Pose
 from robot import Robot
 from util import distance, findOrientation
@@ -47,10 +47,10 @@ class AGV:
         type = msg["type"]
         data = msg["data"]
         if type == "position":
-            self.setStartCoordinate(dictToPoint(data))
+            self.setStartCoordinate(dictToPointCHGXY(data))
         elif type == "path":
-            path = map(dictToPoint, data["path"])
-            self.insertGoal(dictToPoint(data["goal"]))
+            path = map(dictToPointCHGXY, data["path"])
+            self.insertGoal(dictToPointCHGXY(data["goal"]))
             self.insertPath(list(path))
     
     def sendAGVState(self):
@@ -150,12 +150,17 @@ class AGV:
 
     def getRobotState(self) -> dict:
         pos: Pose = self.robot.getPos()
+        x = pos.point.y
+        y = pos.point.x
         return {
             "container": self.container,
             "power": self.power,
             "orientation": pos.orientation,
             "velocity": self.robot.getVelocity(),
-            "position": pos.point.toDict(),
+            "position": {
+                "x": x,
+                "y": y
+            }
         }
     
     def stopMoving(self):
@@ -171,12 +176,13 @@ class AGV:
         errorX = targetPoint.point.x - startPoint.point.x
         errorY = targetPoint.point.y - startPoint.point.y
         errorTheta = targetPoint.orientation - startPoint.orientation
-        if abs(errorX) < self.errorTolerance and abs(errorY) < self.errorTolerance and abs(errorTheta) < math.radians(180):
+        if abs(errorX) < self.errorTolerance and abs(errorY) < self.errorTolerance and abs(errorTheta) < 180:
             return 0, 0
         k1 = 2.5
         k2 = 1
         k3 = 1
-        v = k1 * (errorX * math.cos(startPoint.orientation) + errorY * math.sin(startPoint.orientation))
-        omega = k2 * (-errorX * math.sin(startPoint.orientation) + errorY * math.cos(startPoint.orientation)) + k3 * (errorTheta)
+        orien = math.radians(startPoint.orientation)
+        v = k1 * (errorX * math.cos(orien) + errorY * math.sin(orien))
+        omega = k2 * (-errorX * math.sin(orien) + errorY * math.cos(orien)) + k3 * (errorTheta)
         
         return v, omega
