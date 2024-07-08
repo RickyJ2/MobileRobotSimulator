@@ -7,7 +7,7 @@ from lidar import Lidar
 #constant
 MANUAL_MODE = 1
 LYAPUNOV_MODE = 2
-max = 0.04
+max = 0.01
 dt = 100 #ms
 
 class Robot:
@@ -41,21 +41,21 @@ class Robot:
 
     def draw(self, map: pygame.Surface):
         map.blit(self.rotated, self.rect)
-        for reading in self.lidarReadings:
-            if reading[1] > 200:
-                continue
-            degRad = math.radians(reading[0]) + self.theta
-            x1 = self.x + self.radius * math.cos(degRad)
-            y1 = self.y + self.radius * math.sin(degRad)
-            x2 = self.x + reading[1] * math.cos(degRad)
-            y2 = self.y + reading[1] * math.sin(degRad)
-            color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
-            pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
-        for corner in self.corners:
-            degRad = math.radians(self.lidarReadings[corner][0]) + self.theta
-            x = self.x + self.lidarReadings[corner][1] * math.cos(degRad)
-            y = self.y + self.lidarReadings[corner][1] * math.sin(degRad)
-            pygame.draw.circle(map, (0, 0, 255), (int(x), int(y)), 5)
+        # for reading in self.lidarReadings:
+        #     if reading[1] > 200:
+        #         continue
+        #     degRad = math.radians(reading[0]) + self.theta
+        #     x1 = self.x + self.radius * math.cos(degRad)
+        #     y1 = self.y + self.radius * math.sin(degRad)
+        #     x2 = self.x + reading[1] * math.cos(degRad)
+        #     y2 = self.y + reading[1] * math.sin(degRad)
+        #     color = (0, 255, 0) if reading[1] == self.lidar.sensor_range else (255, 0, 0)
+        #     pygame.draw.line(map, color, (x1, y1), (x2, y2), 1)
+        # for corner in self.corners:
+        #     degRad = math.radians(self.lidarReadings[corner][0]) + self.theta
+        #     x = self.x + self.lidarReadings[corner][1] * math.cos(degRad)
+        #     y = self.y + self.lidarReadings[corner][1] * math.sin(degRad)
+        #     pygame.draw.circle(map, (0, 0, 255), (int(x), int(y)), 5)
 
     def findObs(self):
         sumDiff = 0
@@ -89,7 +89,8 @@ class Robot:
                 self.mode = MANUAL_MODE
         if self.mode == LYAPUNOV_MODE and pygame.time.get_ticks() - self.previousTime > dt:
             self.previousTime = pygame.time.get_ticks()
-            vT, omegaT = self.LyapunovControl([self.targetPos[0], self.targetPos[1], math.radians(0)])
+            orientation = math.atan2(self.targetPos[1] - self.y, self.targetPos[0] - self.x)
+            vT, omegaT = self.LyapunovControl([self.targetPos[0], self.targetPos[1], orientation])
             self.vLeft = vT - omegaT*self.width/2
             self.vRight = vT + omegaT*self.width/2
         self.vLeft, self.vRight = self.saturatedSpeed(self.vLeft, self.vRight, max)
@@ -98,8 +99,14 @@ class Robot:
         self.x += v * math.cos(self.theta)
         self.y += v * math.sin(self.theta)
         self.theta += omega
-        print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", math.degrees(omega))
-        self.rotated = pygame.transform.rotozoom(self.body, 360 - math.degrees(self.theta),1)
+        if self.theta > math.pi:
+            self.theta -= 2 * math.pi
+        elif self.theta < -math.pi:
+            self.theta += 2 * math.pi
+        # print("x: ", self.x, "y: ", self.y, "theta: ", math.degrees(self.theta))
+        # print("v Left: ", self.vLeft,"v Right: ", self.vRight, "v: ", v, "omega: ", math.degrees(omega))
+        # self.rotated = pygame.transform.rotozoom(self.body, 360 - math.degrees(self.theta),1)
+        self.rotated = pygame.transform.rotozoom(self.body, 360 -  math.degrees(self.theta),1)
         self.rect = self.rotated.get_rect(center=(self.x, self.y))
     
     def saturatedSpeed(self, vLeft, vRight, maxSpeed):
@@ -132,11 +139,18 @@ class Robot:
         errorTheta = targetPoint[2] - (self.theta)
         if abs(errorX) < 5 and abs(errorY) < 5 and abs(errorTheta) < math.radians(180):
             return 0, 0
-        k1 = 2.5
-        k2 = 1
-        k3 = 1
+        k1 = 1
+        k2 = 0.8
+        k3 = 0.1
+        if errorTheta > math.pi:
+            errorTheta -= 2 * math.pi
+        elif errorTheta < -math.pi:
+            errorTheta += 2 * math.pi
+        if errorTheta > math.pi/2 or errorTheta < -math.pi/2:
+            return 0, k2 * errorTheta
         v = k1 * (errorX * math.cos(self.theta) + errorY * math.sin(self.theta))
-        omega = k2 * (-errorX * math.sin(self.theta) + errorY * math.cos(self.theta)) + k3 * (errorTheta)
+        # omega = k2 * (-errorX * math.sin(self.theta) + errorY * math.cos(self.theta)) + k3 * (errorTheta)
+        omega = k2 * errorTheta
         
         return v, omega
 

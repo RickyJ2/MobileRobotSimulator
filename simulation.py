@@ -23,8 +23,9 @@ disabledPlotter = True
 class Simulation:
     def __init__(self):
         self.display = display([XDIM, YDIM],'Mobile Robot Simulator',SCALE, Plotter(PLOT_XDIM, PLOT_YDIM, PLOT_DPI))
-        object = readJsonFile("Object.json")
-        self.obs = convertJsonToObs(object, SCALE)
+        # object = readJsonFile("Object.json")
+        # self.obs = convertJsonToObs(object, SCALE)
+        self.obs = []
         self.robot = Robot([POSROBOT_X, POSROBOT_Y], 1.5, Lidar(LIDAR_MAX_RANGE, LIDAR_ANGLE, self.obs))
         self.running = False
 
