@@ -79,7 +79,7 @@ class AGV:
                 if self.isReachTargetPoint():
                     self.stopMoving()
                     self.updateTargetPoint()
-                    #sendNotifReachPoint()
+                    self.sendNotifReachPoint()
                     if self.isReachGoal():
                         self.clearFollowPathParams()
                         self.updateState(IDLE)
@@ -169,6 +169,7 @@ class AGV:
     
     def steerToTargetPoint(self):
         currentPos = self.robot.getPos()
+        # self.currentTargetPose.orientation = findOrientation(self.currentTargetPose.point, currentPos)
         v, omega = self.LyapunovControl(currentPos, self.currentTargetPose)
         self.robot.setSpeed(v, omega)
 
@@ -176,13 +177,17 @@ class AGV:
         errorX = targetPoint.point.x - startPoint.point.x
         errorY = targetPoint.point.y - startPoint.point.y
         errorTheta = targetPoint.orientation - startPoint.orientation
-        if abs(errorX) < self.errorTolerance and abs(errorY) < self.errorTolerance and abs(errorTheta) < 180:
-            return 0, 0
-        k1 = 2.5
-        k2 = 1
-        k3 = 1
+        k1 = 1
+        k2 = 0.8
+        errorTheta = math.radians(errorTheta)
         orien = math.radians(startPoint.orientation)
+        if errorTheta > math.pi:
+            errorTheta -= 2 * math.pi
+        elif errorTheta < -math.pi:
+            errorTheta += 2 * math.pi
+        if errorTheta > math.pi/2 or errorTheta < -math.pi/2:
+            return 0, k2 * errorTheta
         v = k1 * (errorX * math.cos(orien) + errorY * math.sin(orien))
-        omega = k2 * (-errorX * math.sin(orien) + errorY * math.cos(orien)) + k3 * (errorTheta)
-        
+        omega = k2 * errorTheta
+
         return v, omega
