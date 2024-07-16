@@ -7,7 +7,7 @@ from lidar import Lidar
 #constant
 MANUAL_MODE = 1
 LYAPUNOV_MODE = 2
-max = 0.01
+max = 0.04
 dt = 100 #ms
 
 class Robot:
