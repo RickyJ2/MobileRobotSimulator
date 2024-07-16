@@ -1,7 +1,7 @@
 import json
 import logging
 import math
-from point import Point, dictToPointCHGXY
+from point import Point, dictToPoint
 from pose import Pose
 from robot import Robot
 from util import distance, findOrientation
@@ -30,6 +30,9 @@ class AGV:
         self.currentPath: list[Point] = []
         self.currentTargetPose: Pose = None
     
+    def reducePower(self):
+        self.power -= self.robot.getVelocity() * 0.001
+
     def init(self, robot):
         self.robot = robot
     
@@ -47,10 +50,10 @@ class AGV:
         type = msg["type"]
         data = msg["data"]
         if type == "position":
-            self.setStartCoordinate(dictToPointCHGXY(data))
+            self.setStartCoordinate(dictToPoint(data))
         elif type == "path":
-            path = map(dictToPointCHGXY, data["path"])
-            self.insertGoal(dictToPointCHGXY(data["goal"]))
+            path = map(dictToPoint, data["path"])
+            self.insertGoal(dictToPoint(data["goal"]))
             self.insertPath(list(path))
     
     def sendAGVState(self):
@@ -111,7 +114,7 @@ class AGV:
             return
         self.currentTargetPose = Pose(self.currentPath.pop(0), 0)
         if len(self.currentPath) == 0:
-            self.currentTargetPose.orientation = 90
+            self.currentTargetPose.orientation = math.pi
         else:
             self.currentTargetPose.orientation = findOrientation(self.currentPath[0], self.currentTargetPose)
         logging.info(f"current Target point: {self.currentTargetPose.point.toDict()}")
@@ -150,17 +153,12 @@ class AGV:
 
     def getRobotState(self) -> dict:
         pos: Pose = self.robot.getPos()
-        x = pos.point.y
-        y = pos.point.x
         return {
             "container": self.container,
-            "power": self.power,
-            "orientation": pos.orientation,
+            "power": round(self.power),
+            "orientation": math.degrees(pos.orientation),
             "velocity": self.robot.getVelocity(),
-            "position": {
-                "x": x,
-                "y": y
-            }
+            "position": pos.point.toDict(),
         }
     
     def stopMoving(self):
@@ -169,7 +167,7 @@ class AGV:
     
     def steerToTargetPoint(self):
         currentPos = self.robot.getPos()
-        # self.currentTargetPose.orientation = findOrientation(self.currentTargetPose.point, currentPos)
+        self.currentTargetPose.orientation = findOrientation(self.currentTargetPose.point, currentPos)
         v, omega = self.LyapunovControl(currentPos, self.currentTargetPose)
         self.robot.setSpeed(v, omega)
 
@@ -179,15 +177,13 @@ class AGV:
         errorTheta = targetPoint.orientation - startPoint.orientation
         k1 = 1
         k2 = 0.8
-        errorTheta = math.radians(errorTheta)
-        orien = math.radians(startPoint.orientation)
         if errorTheta > math.pi:
             errorTheta -= 2 * math.pi
         elif errorTheta < -math.pi:
             errorTheta += 2 * math.pi
-        if errorTheta > math.pi/2 or errorTheta < -math.pi/2:
+        if errorTheta > math.pi/6 or errorTheta < -math.pi/6:
             return 0, k2 * errorTheta
-        v = k1 * (errorX * math.cos(orien) + errorY * math.sin(orien))
+        v = k1 * (errorX * math.cos(startPoint.orientation) + errorY * math.sin(startPoint.orientation))
         omega = k2 * errorTheta
 
         return v, omega

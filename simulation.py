@@ -12,13 +12,12 @@ from point import Point
 HexagonSize = 350/2 #mm
 width = 7 #number of hexagons
 heigth = 7 #number of hexagons
-#NOTE X dan Y nya dibalik
-XDIM = HexagonSize * heigth * 3 / 2
-YDIM = HexagonSize * width * math.sqrt(3)
-POSROBOT_X_1 = 0 * HexagonSize * 3/2
-POSROBOT_Y_1 = 0 * HexagonSize * math.sqrt(3)
-POSROBOT_X_2 = 0 * HexagonSize * 3/2
-POSROBOT_Y_2 = 6 * HexagonSize * math.sqrt(3)
+XDIM = HexagonSize * width * math.sqrt(3)
+YDIM  = HexagonSize * heigth * 3 / 2
+POSROBOT_X_1 = 0 * HexagonSize * math.sqrt(3)
+POSROBOT_Y_1 = 0 * HexagonSize * 3/2
+POSROBOT_X_2 = 6 * HexagonSize * math.sqrt(3)
+POSROBOT_Y_2 = 0 * HexagonSize * 3/2
 SCALE = 0.2
 dt = 10 #ms
 
@@ -29,8 +28,8 @@ class Simulation:
         self.obs = convertJsonToObs(object, SCALE)
         self.agv1:AGV = AGV(1)
         self.agv2:AGV = AGV(2)
-        robot1 = Robot(Point(POSROBOT_X_1, POSROBOT_Y_1), 1.5, SCALE, HexagonSize)
-        robot2 = Robot(Point(POSROBOT_X_2, POSROBOT_Y_2), 1.5, SCALE, HexagonSize)
+        robot1 = Robot(Point(POSROBOT_X_1, POSROBOT_Y_1), 1.5, SCALE, HexagonSize, YDIM)
+        robot2 = Robot(Point(POSROBOT_X_2, POSROBOT_Y_2), 1.5, SCALE, HexagonSize, YDIM)
         self.agv1.init(robot1)
         self.agv2.init(robot2)
         self.running = False
@@ -51,6 +50,8 @@ class Simulation:
                     self.previousTime = pygame.time.get_ticks()
                     self.agv1.robot.move()
                     self.agv2.robot.move()
+                    self.agv1.reducePower()
+                    self.agv2.reducePower()
                 self.agv1.run()
                 self.agv2.run()
             pygame.quit()
