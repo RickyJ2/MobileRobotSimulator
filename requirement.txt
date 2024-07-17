@@ -1,3 +1,5 @@
 pygame
 matplotlib
 tornado
+pandas
+openpyxl

@@ -1,6 +1,10 @@
 import json
 import logging
 import math
+import pandas as pd
+import os
+from datetime import datetime
+import uuid
 from point import Point, dictToPoint
 from pose import Pose
 from robot import Robot
@@ -10,6 +14,7 @@ from websocketConnection import WebsocketConnection
 IDLE = 0
 FOLLOW_PATH = 1
 WAIT_PATH = 2
+FILENAME = "data.xlsx"
 
 class AGV:
     def __init__(self, id):
@@ -29,6 +34,10 @@ class AGV:
         self.currentGoal: Point = None
         self.currentPath: list[Point] = []
         self.currentTargetPose: Pose = None
+        self.previousTime = 0
+        self.vLyapunov = 0
+        self.omegaLyapunov = 0
+        self.clearData()
     
     def reducePower(self):
         self.power -= self.robot.getVelocity() * 0.001
@@ -69,7 +78,60 @@ class AGV:
         }
         self.websocket.send(json.dumps(msg))
 
-    def run(self):
+    def writeToExcel(self):
+        if len(self.data["time"]) == 0:
+            logging.info("No data to write")
+            return
+        df = pd.DataFrame(self.data)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        unique_uuid = uuid.uuid4().hex[:6]
+        sheet_name = f"AGV{self.id}_{timestamp}_{unique_uuid}"
+        if not os.path.exists(FILENAME):
+            with pd.ExcelWriter(FILENAME, mode='w', engine='openpyxl') as writer:
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+            logging.info(f"Data has been written to {FILENAME} sheet {sheet_name}")
+        else:
+            with pd.ExcelWriter(FILENAME, mode='a', engine='openpyxl') as writer:
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+            logging.info(f"Data has been written to {FILENAME} sheet {sheet_name}")
+        #clear self.data
+        self.clearData()
+
+    def clearData(self):
+        self.data = {
+            "time": [],
+            "cur_x": [],
+            "cur_y": [],
+            "cur_orien": [],
+            "goal_x": [],
+            "goal_y": [],
+            "goal_orien": [],
+            "power": [],
+            "v_lyapunov": [],
+            "omega_lyapunov": [],
+            "v_left": [],
+            "v_right": [],
+        }
+    
+    def insertData(self, time):
+        currentPos = self.robot.getPos()
+        goal = self.currentTargetPose
+        v = self.vLyapunov
+        omega = self.omegaLyapunov
+        self.data["time"].append(time)
+        self.data["cur_x"].append(currentPos.point.x)
+        self.data["cur_y"].append(currentPos.point.y)
+        self.data["cur_orien"].append(currentPos.orientation)
+        self.data["goal_x"].append(goal.point.x)
+        self.data["goal_y"].append(goal.point.y)
+        self.data["goal_orien"].append(goal.orientation)
+        self.data["power"].append(round(self.power))
+        self.data["v_lyapunov"].append(v)
+        self.data["omega_lyapunov"].append(omega)
+        self.data["v_left"].append(self.robot.vLeft)
+        self.data["v_right"].append(self.robot.vRight)
+
+    def run(self, milis):
         try:
             if self.stateIs(IDLE):
                 if self.noGoal():
@@ -83,13 +145,19 @@ class AGV:
                     self.stopMoving()
                     self.updateTargetPoint()
                     self.sendNotifReachPoint()
+                    self.writeToExcel()
                     if self.isReachGoal():
                         self.clearFollowPathParams()
                         self.updateState(IDLE)
+                    return
                 elif self.isCurrentTargetPointNone():
                     self.updateTargetPoint()
+                    return
                 else:
                     self.steerToTargetPoint()
+                if milis - self.previousTime > 100:
+                    self.previousTime = milis
+                    self.insertData(datetime.now().strftime("%H:%M:%S.%f"))
         except Exception as e:
             logging.error(e)
 
@@ -169,6 +237,8 @@ class AGV:
         currentPos = self.robot.getPos()
         self.currentTargetPose.orientation = findOrientation(self.currentTargetPose.point, currentPos)
         v, omega = self.LyapunovControl(currentPos, self.currentTargetPose)
+        self.vLyapunov = v
+        self.omageLyapunov = omega
         self.robot.setSpeed(v, omega)
 
     def LyapunovControl(self, startPoint: Pose, targetPoint: Pose) -> tuple[float, float]:
