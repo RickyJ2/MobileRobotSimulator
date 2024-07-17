@@ -17,7 +17,7 @@ WAIT_PATH = 2
 FILENAME = "data.xlsx"
 
 class AGV:
-    def __init__(self, id):
+    def __init__(self, id, samplingTime):
         self.id = id
         self.state = IDLE
 
@@ -34,6 +34,7 @@ class AGV:
         self.currentGoal: Point = None
         self.currentPath: list[Point] = []
         self.currentTargetPose: Pose = None
+        self.sampleTime = samplingTime
         self.previousTime = 0
         self.vLyapunov = 0
         self.omegaLyapunov = 0
@@ -155,7 +156,7 @@ class AGV:
                     return
                 else:
                     self.steerToTargetPoint()
-                if milis - self.previousTime > 100:
+                if milis - self.previousTime > self.sampleTime:
                     self.previousTime = milis
                     self.insertData(datetime.now().strftime("%H:%M:%S.%f"))
         except Exception as e:
